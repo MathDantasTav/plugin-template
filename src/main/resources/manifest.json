@@ -19,8 +19,8 @@
     "OptionalDependencies": {
         
     },
-    "ServerVersion": ">=0.5.3 <0.6.0",
-    "Main": "dev.mathantastic.betterAI",
+    "ServerVersion": ">=0.7",
+    "Main": "dev.hytalemodding.ExamplePlugin",
     "UpdateChecker": {
         "CurseForge": ""
     }

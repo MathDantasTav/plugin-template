@@ -17,7 +17,7 @@
         "Hytale:AssetModule": "*"
     },
     "OptionalDependencies": {
-        
+        "Hytale:NPCPlugin": "*"
     },
     "ServerVersion": ">=0.7",
     "Main": "dev.hytalemodding.ExamplePlugin",

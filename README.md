@@ -1,161 +1,65 @@
-# Hytale Plugin Template
+![Hytale Modding](docs/banner.jpeg)
 
-A ready-to-use starting point for creating Hytale server plugins with Java, _or Kotlin_. If you've
-been using the Asset Editor and want to start writing server-side logic — custom commands, event
-handling, gameplay systems — this is the simplest place to begin.
+# Hytale Modding
 
-This template uses the [Hytale Gradle Plugin](https://github.com/AzureDoom/Hytale-Gradle-Plugin),
-a Gradle plugin maintained by AzureDoom for Hytale mod/plugin development. It handles the repetitive
-project setup work for you, including manifest generation, validation, local server runs, IDE source
-setup, and optional hosted Hytale Javadoc injection.
+## Better AI: Smarter Wolves and Birds for Hytale
 
-## How to start
+### A server mod that gives Hytale's creatures group behavior: wolves that hunt as a pack and birds that fly as a real flock.
 
-1. Copy the template by downloading it or using the **Use this template** button.
-2. [Configure or install the Java SDK](https://hytalemodding.dev/en/docs/guides/plugin/setting-up-env)
-   to use Java 25. JetBrains Runtime is recommended for the best hot-reload/debugging experience.
-3. Open the project in your favorite IDE. We recommend
-   [IntelliJ IDEA](https://www.jetbrains.com/idea/download).
-4. Update the project values in `gradle.properties`:
-    - `rootProject.name` in `settings.gradle.kts`
-    - `group`
-    - `manifest_group`
-    - `mod_name`
-    - `mod_id`
-    - `main_class`
-    - `mod_author`
-    - `mod_description`
-    - `mod_url`
-5. Optionally run `./gradlew` if your IDE does not automatically sync the project.
-6. Prepare the Hytale development environment:
+[![Better AI overview video](https://img.youtube.com/vi/yit8Vit4mYI/hqdefault.jpg)](https://www.youtube.com/watch?v=yit8Vit4mYI)
 
-   ```bash
-   ./gradlew setupHytaleDev
-   ```
+## The Problem
 
-7. Run the local development server:
+In vanilla Hytale, animals that come in groups don't act like groups. Each wolf picks its own target and runs at it alone. Pigeons spawn together but move on their own, flying in tight loops around their home spot and never really going anywhere.
 
-   ```bash
-   ./gradlew runServer
-   ```
+I wanted to make wild creatures feel alive: wolves that hunt as a pack and birds that move as one flock across the landscape.
 
-> On Windows, use `./gradlew.bat` or `gradlew.bat` instead of `./gradlew`. The Gradle wrapper is
-> included so you do not need to install Gradle separately; only Java is required.
+## Approach: JSON for decisions, Java for movement
 
-When the server starts, the output may prompt you to authorize your Hytale server. After that, you
-can begin developing your plugin while the server handles local development runs.
+Hytale NPCs use JSON role files as state machines, sensors check conditions and trigger actions or movement. I kept everything possible in JSON, following vanilla conventions and making states, timers, alerts, animations, flock joining and spawns easy to tune.
 
-From here, the [HytaleModding guides](https://hytalemodding.dev/en/docs/guides/plugin/build-and-test)
-cover more details.
+I only used Java where JSON fell short:
 
-## Hytale Gradle Plugin
+- **Shared state:** Each NPC has its own JSON instance, so coordinated flocks need a shared registry keyed by flock ID.
+- **Custom movement math:** Orbits, flocking forces, easing curves and terrain look-ahead require per-tick calculations beyond vanilla movement.
+- **World data:** Accessing block types, distant ground height and dead flock members requires Java.
 
-This template is built around AzureDoom's `com.azuredoom.hytale-tools` Gradle plugin.
+Each Java feature is registered as a component type, usable from JSON like any vanilla component (e.g. `"Type": "BirdFlight"`), with configurable parameters.
 
-The plugin is configured in `build.gradle.kts`:
+## Wolves: hunting as a pack
 
-```kotlin
-plugins {
-    idea
-    java
-    id("com.azuredoom.hytale-tools") version "1.+"
-}
-```
+- **Packs of 4–6:** I added a custom flock definition and spawn override (JSON).
+- **Surrounding the prey (Java, `PackCircle`):** Before attacking, the pack spreads into a ring around its target. A shared orbit keeps them evenly spaced and in order, with slight drift so it looks natural and not robotic. *Why Java:* each wolf has to know where the others are on the ring.
+- **Breaking morale (Java, `PackMorale`):** Once enough of the pack has died, the survivors flee. *Why Java:* no vanilla sensor counts dead packmates, and dead NPCs can't send alerts.
+- **Black wolf variant:** `Wolf_Black` is a short JSON variant of the new template.
 
-The AzureDoom Maven repository is configured in `settings.gradle.kts`:
+### Vanilla
 
-```kotlin
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-        maven {
-            name = "AzureDoom Maven"
-            url = uri("https://maven.azuredoom.com/mods")
-        }
-    }
-}
-```
+[![Vanilla wolves video](https://img.youtube.com/vi/cDeS2clS_aQ/hqdefault.jpg)](https://www.youtube.com/watch?v=cDeS2clS_aQ)
 
-Most plugin-specific settings are controlled from `gradle.properties` and passed into the
-`hytaleTools` block in `build.gradle.kts`. This keeps common project metadata in one easy-to-edit
-place.
+### Modded
 
-For full plugin documentation, configuration options, tasks, and multi-project setup, visit the
-[Hytale Gradle Plugin repository](https://github.com/AzureDoom/Hytale-Gradle-Plugin).
+[![Modded wolves video](https://img.youtube.com/vi/uvZ--d2dnKk/hqdefault.jpg)](https://www.youtube.com/watch?v=uvZ--d2dnKk)
 
-## Useful commands
+## Birds: flying as a real flock
 
-```bash
-# Sync/setup the local Hytale development environment
-./gradlew setupHytaleDev
+- **Flock behavior (JSON + Java):** Flocks take off together, circle, fly 90–180 blocks, land, wander, and repeat. Each flock follows one shared flight plan, with birds maintaining loose positions, catching up when behind, and avoiding neighbors. This prevents the splitting I encountered when birds relied only on neighbor-based steering. Small flocks also merge using vanilla's existing wolf merge rule.
+- **Terrain-aware flight and landings (Java):** Each bird scans the ground below and up to 35 blocks ahead, including treetops, to anticipate obstacles and smoothly adjust altitude. Vanilla's controller only checks 6 blocks down, causing birds to climb indefinitely over higher terrain. Landings use gradual gliding and deceleration, avoid treetops, and switch to walking on touchdown.
+- **Group reactions (JSON):** When one bird is hurt or spots a nearby player, it alerts the entire flock. They scatter together, circle briefly with wings flapping, then fly away.
 
-# Run the local Hytale server
-./gradlew runServer
+### Vanilla
 
-# Run the server with debugging and hot swap enabled
-./gradlew runServer -Ddebug=true -Dhotswap=true
+[![Vanilla birds video](https://img.youtube.com/vi/A-uMP6OJjjQ/hqdefault.jpg)](https://www.youtube.com/watch?v=A-uMP6OJjjQ)
 
-# Check your JVM and hot swap setup
-./gradlew hytaleJvmDoctor
+### Modded
 
-# Build the plugin
-./gradlew build
+[![Modded birds video](https://img.youtube.com/vi/iaodaVNGKME/hqdefault.jpg)](https://www.youtube.com/watch?v=iaodaVNGKME)
 
-# Refresh dependencies if something fails to resolve
-./gradlew build --refresh-dependencies
-```
+## Design decision
 
-## Project structure
+- **Override instead of add:** I replaced the vanilla bird template and spawn files, so every existing bird and wolf gets the new behavior without editing each creature.
+- **Lightweight shared state:** The registries are small shared tables that clean up after themselves. They need no saving and work across any number of flocks.
+- **Tunable from JSON:** Heights, distances, speeds and ground time are all parameters, so each species can be tuned without recompiling.
+- **Performance:** Terrain checks run four times a second per bird, not every tick.
 
-```text
-src/main/java/        Plugin source code
-src/main/resources/   Plugin resources, including manifest.json
-gradle.properties     Main template configuration
-build.gradle.kts      Gradle build and Hytale Gradle Plugin configuration
-settings.gradle.kts   Plugin repositories and project name
-```
-
-## Manifest configuration
-
-The generated `manifest.json` is driven by the values in `gradle.properties`, including:
-
-- `manifest_group`
-- `mod_id`
-- `version`
-- `mod_description`
-- `mod_author`
-- `mod_url`
-- `main_class`
-- `manifest_dependencies`
-- `manifest_opt_dependencies`
-- `manifestServerVersion`
-
-After changing these values, run:
-
-```bash
-./gradlew updatePluginManifest
-```
-
-## Troubleshooting
-
-- **Gradle sync fails in IntelliJ** — Check that Java 25 is installed and configured under
-  **File → Project Structure → SDKs**.
-- **The Hytale Gradle Plugin does not resolve** — Make sure `settings.gradle.kts` includes the
-  AzureDoom Maven repository at `https://maven.azuredoom.com/mods`.
-- **Build fails with missing dependencies** — Run `./gradlew build --refresh-dependencies` and make
-  sure you have internet access.
-- **Permission denied on `./gradlew`** — Run `chmod +x gradlew` on macOS/Linux.
-- **Hot reload or enhanced class redefinition does not work** — Use JetBrains Runtime and try
-  `./gradlew hytaleJvmDoctor` to verify your JVM setup.
-
-## Resources
-
-- [Hytale Gradle Plugin](https://github.com/AzureDoom/Hytale-Gradle-Plugin)
-- [Hytale Modding Guides](https://hytalemodding.dev)
-- [Hytale Modding Discord](https://discord.gg/hytalemodding)
-
-## License
-
-Add your own license after copying the template. We recommend MIT, BSD, or Apache to keep the
-modding community open.
+Matheus Tavares

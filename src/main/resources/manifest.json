@@ -1,16 +1,14 @@
 {
-    "Group": "Mathantastic",
+    "Group": "MathantasticProductions",
     "Name": "BetterAI",
-    "Version": "0.0.0",
-    "Description": "Improves AI of several mobs",
+    "Version": "0.1.0",
+    "Description": "Smarter group AI: wolves hunt as a pack and birds fly as a real flock",
     "Authors": [
         {
-            "Name": "Your_Name",
-            "Email": "your.email@example.com",
-            "Url": "https://your-website.com"
+            "Name": "MathantasticProductions"
         }
     ],
-    "Website": "https://your-plugin-website.com",
+    "Website": "https://github.com/MathDantasTav/plugin-template",
     "DisabledByDefault": false,
     "IncludesAssetPack": true,
     "Dependencies": {
@@ -20,7 +18,7 @@
         "Hytale:NPCPlugin": "*"
     },
     "ServerVersion": ">=0.7",
-    "Main": "dev.hytalemodding.ExamplePlugin",
+    "Main": "dev.mathantastic.betterai.BetterAIPlugin",
     "UpdateChecker": {
         "CurseForge": ""
     }

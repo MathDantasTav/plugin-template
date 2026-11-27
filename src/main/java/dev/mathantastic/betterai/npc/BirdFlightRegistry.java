@@ -1,4 +1,4 @@
-package dev.hytalemodding.npc;
+package dev.mathantastic.betterai.npc;
 
 import org.joml.Vector3d;
 

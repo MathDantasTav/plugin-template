@@ -1,4 +1,4 @@
-package dev.hytalemodding.npc;
+package dev.mathantastic.betterai.npc;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;

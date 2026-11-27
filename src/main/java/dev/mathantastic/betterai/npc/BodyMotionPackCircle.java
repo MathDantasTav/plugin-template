@@ -1,4 +1,4 @@
-package dev.hytalemodding.npc;
+package dev.mathantastic.betterai.npc;
 
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;

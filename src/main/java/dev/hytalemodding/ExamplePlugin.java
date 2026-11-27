@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.npc.NPCPlugin;
 import dev.hytalemodding.commands.ExampleCommand;
 import dev.hytalemodding.config.ExampleConfig;
 import dev.hytalemodding.events.ExampleEvent;
+import dev.hytalemodding.npc.BuilderBodyMotionBirdFlight;
 import dev.hytalemodding.npc.BuilderBodyMotionPackCircle;
 import dev.hytalemodding.npc.BuilderSensorPackMorale;
 
@@ -24,9 +25,10 @@ public class ExamplePlugin extends JavaPlugin {
 
     @Override
     protected void setup() {
-        // Custom NPC components used by Template_PackPredator
+        // Custom NPC components used by Template_PackPredator and Template_Birds_Passive
         NPCPlugin.get().registerCoreComponentType(BuilderBodyMotionPackCircle.TYPE_NAME, BuilderBodyMotionPackCircle::new);
         NPCPlugin.get().registerCoreComponentType(BuilderSensorPackMorale.TYPE_NAME, BuilderSensorPackMorale::new);
+        NPCPlugin.get().registerCoreComponentType(BuilderBodyMotionBirdFlight.TYPE_NAME, BuilderBodyMotionBirdFlight::new);
 
         config.save();
         this.getCommandRegistry().registerCommand(new ExampleCommand("example", "An example command"));

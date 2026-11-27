@@ -1,0 +1,551 @@
+{
+  "Type": "Abstract",
+  "StartState": "Idle",
+  "Parameters": {
+    "Appearance": {
+      "Value": "Bluebird",
+      "Description": "Model to be used"
+    },
+    "DropList": {
+      "Value": "Empty",
+      "Description": "Drop Items"
+    },
+    "FlockArray": {
+      "Value": [ "Template_Birds_Passive" ],
+      "Description": "Array containing NPCs for this flock type"
+    },
+    "WanderRadius": {
+      "Value": 15,
+      "Description": "Unused by the flight logic, kept so existing variants still load"
+    },
+    "MinHeightOverGround": {
+      "Value": 15,
+      "Description": "Min Height over ground"
+    },
+    "MaxHeightOverGround": {
+      "Value": 35,
+      "Description": "Max Height over ground"
+    },
+    "CruiseHeightMin": {
+      "Value": 16,
+      "Description": "Lowest height over ground a flock cruises at"
+    },
+    "CruiseHeightMax": {
+      "Value": 26,
+      "Description": "Highest height over ground a flock cruises at"
+    },
+    "FlightSpeed": {
+      "Value": 0.5,
+      "Description": "Relative speed of a normal flight"
+    },
+    "FlightDistanceMin": {
+      "Value": 90,
+      "Description": "Shortest distance the flock flies before landing"
+    },
+    "FlightDistanceMax": {
+      "Value": 180,
+      "Description": "Longest distance the flock flies before landing"
+    },
+    "FleeSpeed": {
+      "Value": 0.8,
+      "Description": "Relative speed when scared off"
+    },
+    "FleeDistanceMin": {
+      "Value": 60,
+      "Description": "Shortest distance the flock flies when scared off"
+    },
+    "FleeDistanceMax": {
+      "Value": 100,
+      "Description": "Longest distance the flock flies when scared off"
+    },
+    "GroundTime": {
+      "Value": [ 8, 16 ],
+      "Description": "Seconds spent on the ground between flights"
+    },
+    "GroundWanderRadius": {
+      "Value": 4,
+      "Description": "Radius to wander in while on the ground"
+    },
+    "ScareRange": {
+      "Value": 8,
+      "Description": "A player this close scares the flock off"
+    },
+    "MaxHealth": {
+      "Value": 100,
+      "Description": "Max health for the NPC"
+    },
+    "DeathParticles": {
+      "Value": "Effect_Death_Feathers",
+      "Description": "The particle system that spawns when the NPC's corpse disappears."
+    },
+    "DropDeathItemsInstantly": {
+      "Value": false,
+      "Description": "Whether the NPC's drop list should be executed when the NPC dies. If set to false, items drop when the corpse disappears."
+    },
+    "DeathAnimationTime": {
+      "Value": 1.5,
+      "Description": "The time it takes for this NPC's corpse to disappear."
+    },
+    "IsMemory": {
+      "Value": false,
+      "Description": "Defines if the NPC is a memory"
+    },
+    "MemoriesCategory": {
+      "Value": "Other",
+      "Description": "Defines the category of the memory"
+    },
+    "MemoriesNameOverride": {
+      "Value": "",
+      "Description": "Overrides the memory name if set"
+    },
+    "MemoriesUnlockedBy": {
+      "Value": "Proximity",
+      "Description": "How the player records the memory, either Proximity or Kill."
+    },
+    "MemoriesKillRange": {
+      "Value": 0,
+      "Description": "Radius in blocks in which the memory is recorded when the NPC dies. 0 uses the server default."
+    },
+    "NameTranslationKey": {
+      "Value": "server.npcRoles.Template.name",
+      "Description": "Translation key for NPC name display"
+    }
+  },
+  "IsMemory": { "Compute": "IsMemory" },
+  "MemoriesCategory": { "Compute": "MemoriesCategory" },
+  "MemoriesNameOverride": { "Compute": "MemoriesNameOverride" },
+  "MemoriesUnlockedBy": { "Compute": "MemoriesUnlockedBy" },
+  "MemoriesKillRange": { "Compute": "MemoriesKillRange" },
+  "DropList": { "Compute": "DropList" },
+  "FlockSpawnTypes": { "Compute": "FlockArray" },
+  "DisableDamageGroups": [ "Self" ],
+  "Appearance": { "Compute": "Appearance" },
+  "KnockbackScale": 0.5,
+  "DeathParticles": { "Compute": "DeathParticles" },
+  "DropDeathItemsInstantly": { "Compute": "DropDeathItemsInstantly" },
+  "DeathAnimationTime": { "Compute": "DeathAnimationTime" },
+  "MotionControllerList": [
+    {
+      "Type": "Fly",
+      "MaxHorizontalSpeed": 20,
+      "MaxSinkSpeed": 3,
+      "MaxClimbSpeed": 10,
+      "MinAirSpeed": 4,
+      "Acceleration": 5,
+      "MinHeightOverGround": { "Compute": "MinHeightOverGround" },
+      "MaxHeightOverGround": { "Compute": "MaxHeightOverGround" },
+      "MaxRollAngle": 180,
+      "MaxTurnSpeed": 360
+    },
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": 3,
+      "Gravity": 10,
+      "MaxFallSpeed": 8,
+      "Acceleration": 10
+    }
+  ],
+  "MaxHealth": { "Compute": "MaxHealth" },
+  "Instructions": [
+    {
+      "$Comment": "Always running: loners join nearby birds of their kind so they fly as one flock",
+      "Continue": true,
+      "Instructions": [
+        {
+          "Enabled": { "Compute": "!isEmptyStringArray(FlockArray)" },
+          "Sensor": {
+            "Type": "Mob",
+            "Range": 20,
+            "ExcludeOwnType": false,
+            "LockOnTarget": false,
+            "Filters": [
+              {
+                "Type": "NPCGroup",
+                "IncludeGroups": [ "Self" ]
+              },
+              {
+                "Type": "Flock",
+                "FlockStatus": "NotMember"
+              }
+            ]
+          },
+          "Actions": [
+            {
+              "Type": "JoinFlock"
+            }
+          ]
+        },
+        {
+          "$Comment": "The game won't merge two existing flocks, so a leader that sees a bird from another flock it can join switches over. The random delay stops two leaders swapping at the same time.",
+          "Enabled": { "Compute": "!isEmptyStringArray(FlockArray)" },
+          "Sensor": {
+            "Type": "Self",
+            "Filters": [
+              {
+                "Type": "Flock",
+                "FlockStatus": "Leader"
+              }
+            ]
+          },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "Mob",
+                "Range": 20,
+                "ExcludeOwnType": false,
+                "LockOnTarget": false,
+                "Filters": [
+                  {
+                    "Type": "NPCGroup",
+                    "IncludeGroups": [ "Self" ]
+                  },
+                  {
+                    "Type": "Flock",
+                    "FlockStatus": "Member",
+                    "CheckCanJoin": true
+                  }
+                ]
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [ 0.5, 3 ],
+                  "Action": {
+                    "Type": "Sequence",
+                    "Actions": [
+                      {
+                        "Type": "LeaveFlock"
+                      },
+                      {
+                        "Type": "JoinFlock"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "Idle"
+          },
+          "Instructions": [
+            {
+              "$Comment": "Anything scary sends the whole flock off",
+              "Sensor": {
+                "Type": "Or",
+                "Sensors": [
+                  {
+                    "Type": "Damage",
+                    "Combat": true,
+                    "TargetSlot": "LockedTarget"
+                  },
+                  {
+                    "Type": "Damage",
+                    "Combat": false,
+                    "Other": true
+                  },
+                  {
+                    "Type": "Player",
+                    "Range": { "Compute": "ScareRange" },
+                    "Filters": [
+                      {
+                        "Type": "LineOfSight"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "Actions": [
+                {
+                  "Type": "FlockBeacon",
+                  "Message": "Bird_Alarm",
+                  "SendToSelf": false,
+                  "ExpirationTime": 1
+                },
+                {
+                  "Type": "State",
+                  "State": "Flee"
+                }
+              ]
+            },
+            {
+              "Sensor": {
+                "Type": "Beacon",
+                "Message": "Bird_Alarm"
+              },
+              "Actions": [
+                {
+                  "Type": "State",
+                  "State": "Flee"
+                }
+              ]
+            },
+            {
+              "$Comment": "Flying",
+              "Sensor": {
+                "Type": "State",
+                "State": ".Default"
+              },
+              "Instructions": [
+                {
+                  "Sensor": {
+                    "Type": "MotionController",
+                    "MotionController": "Walk"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": ".Ground"
+                    }
+                  ]
+                },
+                {
+                  "Continue": true,
+                  "Sensor": {
+                    "Type": "Any",
+                    "Once": true
+                  },
+                  "Actions": [
+                    {
+                      "Type": "PlayAnimation",
+                      "Slot": "Status"
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "BodyMotion": {
+                    "Type": "BirdFlight",
+                    "RelativeSpeed": { "Compute": "FlightSpeed" },
+                    "FlightDistanceMin": { "Compute": "FlightDistanceMin" },
+                    "FlightDistanceMax": { "Compute": "FlightDistanceMax" },
+                    "CruiseHeightMin": { "Compute": "CruiseHeightMin" },
+                    "CruiseHeightMax": { "Compute": "CruiseHeightMax" }
+                  }
+                }
+              ]
+            },
+            {
+              "$Comment": "Landed: wander around for a bit, then the whole flock takes off",
+              "Sensor": {
+                "Type": "State",
+                "State": ".Ground"
+              },
+              "Instructions": [
+                {
+                  "Continue": true,
+                  "Sensor": {
+                    "Type": "Any",
+                    "Once": true
+                  },
+                  "Actions": [
+                    {
+                      "Type": "PlayAnimation",
+                      "Slot": "Status"
+                    },
+                    {
+                      "Type": "SetLeashPosition",
+                      "ToCurrent": true
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "MotionController",
+                    "MotionController": "Fly"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": ".Default"
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "Beacon",
+                    "Message": "Bird_TakeOff"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": ".TakeOff"
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "ActionsBlocking": true,
+                  "Actions": [
+                    {
+                      "Type": "Timeout",
+                      "Delay": { "Compute": "GroundTime" }
+                    },
+                    {
+                      "Type": "FlockBeacon",
+                      "Message": "Bird_TakeOff",
+                      "SendToSelf": false,
+                      "ExpirationTime": 1
+                    },
+                    {
+                      "Type": "State",
+                      "State": ".TakeOff"
+                    }
+                  ],
+                  "BodyMotion": {
+                    "Type": "WanderInCircle",
+                    "Radius": { "Compute": "GroundWanderRadius" },
+                    "MaxHeadingChange": 90,
+                    "RelativeSpeed": 0.3
+                  }
+                }
+              ]
+            },
+            {
+              "Sensor": {
+                "Type": "State",
+                "State": ".TakeOff"
+              },
+              "Instructions": [
+                {
+                  "Sensor": {
+                    "Type": "MotionController",
+                    "MotionController": "Fly"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": ".Default"
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "BodyMotion": {
+                    "Type": "TakeOff",
+                    "JumpSpeed": 3
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "Flee"
+          },
+          "Instructions": [
+            {
+              "$Comment": "Still on the ground: take off first",
+              "Sensor": {
+                "Type": "State",
+                "State": ".Default"
+              },
+              "Instructions": [
+                {
+                  "Sensor": {
+                    "Type": "MotionController",
+                    "MotionController": "Fly"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": ".Fly"
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "BodyMotion": {
+                    "Type": "TakeOff",
+                    "JumpSpeed": 5
+                  }
+                }
+              ]
+            },
+            {
+              "Sensor": {
+                "Type": "State",
+                "State": ".Fly"
+              },
+              "Instructions": [
+                {
+                  "Continue": true,
+                  "Sensor": {
+                    "Type": "Any",
+                    "Once": true
+                  },
+                  "Actions": [
+                    {
+                      "Type": "PlayAnimation",
+                      "Slot": "Status"
+                    }
+                  ]
+                },
+                {
+                  "$Comment": "Landed after fleeing",
+                  "Sensor": {
+                    "Type": "MotionController",
+                    "MotionController": "Walk"
+                  },
+                  "Actions": [
+                    {
+                      "Type": "State",
+                      "State": "Idle"
+                    }
+                  ]
+                },
+                {
+                  "Sensor": {
+                    "Type": "Player",
+                    "Range": 30,
+                    "LockOnTarget": true
+                  },
+                  "BodyMotion": {
+                    "Type": "BirdFlight",
+                    "RelativeSpeed": { "Compute": "FleeSpeed" },
+                    "FlightDistanceMin": { "Compute": "FleeDistanceMin" },
+                    "FlightDistanceMax": { "Compute": "FleeDistanceMax" },
+                    "FleeFromTarget": true,
+                    "CruiseHeightMin": { "Compute": "CruiseHeightMin" },
+                    "CruiseHeightMax": { "Compute": "CruiseHeightMax" }
+                  }
+                },
+                {
+                  "Sensor": {
+                    "Type": "Any"
+                  },
+                  "BodyMotion": {
+                    "Type": "BirdFlight",
+                    "RelativeSpeed": { "Compute": "FleeSpeed" },
+                    "FlightDistanceMin": { "Compute": "FleeDistanceMin" },
+                    "FlightDistanceMax": { "Compute": "FleeDistanceMax" },
+                    "FleeFromTarget": true,
+                    "CruiseHeightMin": { "Compute": "CruiseHeightMin" },
+                    "CruiseHeightMax": { "Compute": "CruiseHeightMax" }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "NameTranslationKey": { "Compute": "NameTranslationKey" }
+}
